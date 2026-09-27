@@ -1,0 +1,15 @@
+# Core runtime (pinned to a verified working set on Python 3.14 / Windows)
+torch==2.13.0
+numpy>=2.1,<3
+rasterio>=1.4,<2
+affine>=2.4
+opencv-python-headless>=4.9
+pyyaml>=6.0
+# Data ingestion (optional at inference time)
+pystac-client>=0.8
+# Reporting / validation extras
+matplotlib>=3.8
+scipy>=1.13
+# Perceptual metrics (optional; large model downloads)
+# lpips>=0.1.4
+# pytorch-fid>=0.3.0

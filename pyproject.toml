@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "satsr"
+version = "1.0.0"
+description = "Production-grade Sentinel-2 super-resolution (10 m -> <4 m) with geospatial + spectral consistency and uncertainty."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "torch>=2.1",
+    "numpy>=2.1",
+    "rasterio>=1.4",
+    "affine>=2.4",
+    "opencv-python-headless>=4.9",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+ingest = ["pystac-client>=0.8"]
+report = ["matplotlib>=3.8", "scipy>=1.13"]
+perceptual = ["lpips>=0.1.4", "pytorch-fid>=0.3.0"]
+
+[project.scripts]
+satsr = "satsr.cli:main"
+
+[tool.setuptools]
+packages = ["satsr"]

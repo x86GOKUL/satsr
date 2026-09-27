@@ -1,0 +1,9 @@
+# SATSR Lab app dependencies (on top of the core satsr package + its requirements)
+streamlit>=1.36
+streamlit-folium>=0.20
+streamlit-image-comparison>=0.0.4
+folium>=0.16
+shapely>=2.0
+pystac-client>=0.7
+ultralytics>=8.3          # YOLOv8-OBB structure extraction
+# rasterio, numpy, opencv, matplotlib, scikit-image, torch come from the satsr install

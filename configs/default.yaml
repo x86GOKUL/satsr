@@ -1,0 +1,23 @@
+# satsr default configuration (10 m -> 4 m, 4-band Sentinel-2)
+weights: ""                 # empty => auto-resolve from weights/ by channel count
+in_channels: 4             # R,G,B,NIR
+native_scale: 4            # RRDBNet backbone factor
+target_scale: 2.5          # 10 m -> 4 m
+
+band_order: [red, green, blue, nir]
+input_is_dn: true
+dn_scale: 10000.0          # reflectance = DN / 10000
+nodata: 0.0
+
+tile: 384                  # input tile (px); lower if VRAM-limited
+tile_pad: 32
+device: auto               # auto | cuda | cpu
+
+uncertainty: true
+tta: 8                     # 1 (off) | 4 | 8
+
+radiometric_correction: true   # match output per-band mean/std to input (kills colour cast; seam-safe global)
+
+out_dtype: uint16          # uint16 (DN) | float32 (reflectance)
+compress: deflate
+log_level: INFO

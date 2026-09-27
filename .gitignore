@@ -1,0 +1,23 @@
+# --- secrets: NEVER commit ---
+copernicus.env
+*.env
+*.key
+*secret*
+
+# --- model weights (large; download separately for local runs) ---
+weights/
+*.pth
+*.pt
+
+# --- generated / scratch ---
+outputs/
+precache/
+**/__pycache__/
+*.pyc
+.streamlit/secrets.toml
+*.tif
+*.tiff
+.venv/
+venv/
+.DS_Store
+Thumbs.db

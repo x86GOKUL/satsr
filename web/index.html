@@ -1,0 +1,575 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SATSR — Satellite Imagery Super-Resolution &amp; Geospatial Intelligence Platform</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --navy:#0b2545; --steel:#13315c; --ink:#16233a; --muted:#5c6b82;
+    --line:#d3dae6; --bg:#eef1f6; --paper:#ffffff; --gold:#b8860b; --green:#1c6b3c;
+    --serif:Georgia,"Times New Roman",serif;
+    --sans:"Segoe UI",Roboto,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--bg);line-height:1.55;}
+  a{color:var(--steel);text-decoration:none;}
+  img{max-width:100%;display:block;}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 22px;}
+  h1,h2,h3{color:var(--navy);font-weight:700;letter-spacing:.2px;}
+  h2{font-size:1.55rem;margin:0 0 6px;}
+  .sec-over{font-size:.72rem;letter-spacing:2.5px;text-transform:uppercase;color:var(--gold);font-weight:700;}
+
+  /* utility strip */
+  .strip{background:var(--navy);color:#c9d5ea;font-size:.74rem;letter-spacing:.5px;}
+  .strip .wrap{display:flex;justify-content:space-between;align-items:center;padding:6px 22px;}
+
+  /* masthead */
+  .mast{background:var(--paper);border-bottom:3px solid var(--gold);}
+  .mast .wrap{display:flex;align-items:center;gap:18px;padding:14px 22px 16px;}
+  .emblem{flex:0 0 auto;}
+  .m-id{display:flex;flex-direction:column;line-height:1.14;}
+  .m-over{font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--muted);font-weight:600;}
+  .m-name{font-family:var(--serif);font-size:2.1rem;color:var(--navy);font-weight:700;letter-spacing:.6px;margin:2px 0;}
+  .m-sub{font-size:.9rem;color:#3d4a60;}
+  .m-right{margin-left:auto;text-align:right;font-size:.78rem;color:var(--muted);}
+  .m-right b{color:var(--navy);}
+  .tricolor{height:4px;background:linear-gradient(90deg,var(--gold) 0 34%,#e9ebf0 34% 66%,var(--green) 66% 100%);}
+
+  /* nav */
+  nav{background:var(--navy);position:sticky;top:0;z-index:20;border-bottom:1px solid #1c3357;}
+  nav .wrap{display:flex;gap:0;padding:0 22px;flex-wrap:wrap;}
+  nav a{color:#c7d2e6;font-weight:600;font-size:.86rem;letter-spacing:.4px;padding:13px 18px;
+        border-right:1px solid #1c3357;text-transform:uppercase;}
+  nav a:hover{background:#12325c;color:#fff;}
+  nav a.cta{margin-left:auto;background:var(--gold);color:#1a1400;border:none;}
+
+  section{padding:44px 0;border-bottom:1px solid var(--line);}
+  section:nth-of-type(even){background:var(--paper);}
+
+  /* hero */
+  .hero{background:linear-gradient(180deg,rgba(11,37,69,.90),rgba(18,49,92,.95)),url('assets/after.png');
+        background-size:cover;background-position:center;color:#eaf0fa;border-bottom:3px solid var(--gold);}
+  .hero h1{color:#fff;font-family:var(--serif);font-size:2.5rem;line-height:1.18;margin:6px 0 12px;max-width:820px;}
+  .hero p{color:#c4d1e6;font-size:1.08rem;max-width:760px;margin:0 0 22px;}
+  .hero .k{color:var(--gold);font-weight:700;}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:26px;}
+  .stat{background:rgba(255,255,255,.06);border:1px solid #24406e;border-radius:4px;padding:14px 16px;}
+  .stat b{display:block;font-size:1.6rem;color:#fff;font-family:var(--serif);}
+  .stat span{font-size:.8rem;color:#a9bad6;}
+
+  /* before/after slider */
+  .compare{position:relative;max-width:820px;margin:18px auto 0;aspect-ratio:1/1;overflow:hidden;
+           border:1px solid var(--line);border-radius:4px;user-select:none;background:#000;}
+  .compare img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;}
+  .compare .after-wrap{position:absolute;inset:0;width:50%;overflow:hidden;}
+  .compare .after-wrap img{width:820px;max-width:none;}
+  .handle{position:absolute;top:0;bottom:0;left:50%;width:3px;background:var(--gold);cursor:ew-resize;}
+  .handle::after{content:"";position:absolute;top:50%;left:50%;width:38px;height:38px;transform:translate(-50%,-50%);
+    border:3px solid var(--gold);border-radius:50%;background:rgba(11,37,69,.75);}
+  .lbl{position:absolute;bottom:12px;padding:5px 12px;font-size:.82rem;font-weight:700;border-radius:3px;color:#fff;}
+  .lbl.l{left:12px;background:rgba(0,0,0,.6);}
+  .lbl.r{right:12px;background:var(--gold);color:#1a1400;}
+
+  .grid{display:grid;gap:18px;}
+  .g3{grid-template-columns:repeat(3,1fr);}
+  .g2{grid-template-columns:repeat(2,1fr);}
+  .card{background:var(--paper);border:1px solid var(--line);border-top:3px solid var(--navy);border-radius:4px;padding:18px 18px 16px;}
+  section:nth-of-type(even) .card{background:#f7f9fc;}
+  .card h3{font-size:1.05rem;margin:0 0 6px;}
+  .card p{margin:0;font-size:.92rem;color:#37445a;}
+  .card .idx{font-family:var(--serif);font-size:.86rem;font-weight:700;color:var(--gold);
+    letter-spacing:1.5px;display:block;margin-bottom:8px;}
+  .card .spec{display:block;margin-top:11px;padding-top:9px;border-top:1px solid var(--line);
+    font-size:.77rem;color:var(--muted);letter-spacing:.2px;}
+  .card .spec b{color:var(--steel);font-weight:700;}
+
+  figure{margin:0;border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--paper);}
+  figcaption{padding:9px 12px;font-size:.82rem;color:var(--muted);border-top:1px solid var(--line);}
+
+  .impact{display:grid;grid-template-columns:1.1fr .9fr;gap:24px;align-items:center;}
+  .badge{display:inline-block;background:#fbe4c4;color:#7a5200;border:1px solid #e5c98a;
+    font-size:.72rem;font-weight:700;letter-spacing:.5px;padding:3px 9px;border-radius:3px;text-transform:uppercase;}
+  ul.tick{list-style:none;padding:0;margin:10px 0 0;}
+  ul.tick li{padding:6px 0 6px 26px;position:relative;font-size:.95rem;}
+  ul.tick li::before{content:"";position:absolute;left:0;top:11px;width:12px;height:12px;
+    background:var(--green);border-radius:2px;}
+
+  table{width:100%;border-collapse:collapse;margin-top:10px;font-size:.92rem;}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);}
+  thead th{background:var(--navy);color:#fff;font-size:.8rem;letter-spacing:.4px;text-transform:uppercase;}
+  tbody tr:nth-child(even){background:#f3f6fb;}
+  td.hi{color:var(--green);font-weight:700;}
+
+  footer{background:var(--navy);color:#c7d2e6;border-top:3px solid var(--gold);font-size:.84rem;}
+  footer .wrap{padding:22px;}
+  footer b{color:#fff;}
+  footer .disc{color:#8ea1bd;font-size:.76rem;margin-top:10px;}
+
+  .chips{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px;}
+  .chips span{background:#eef2f8;border:1px solid var(--line);color:var(--steel);
+    font-size:.84rem;font-weight:600;padding:7px 13px;border-radius:3px;}
+  .runbar{display:flex;flex-wrap:wrap;gap:14px;align-items:end;background:var(--paper);
+    border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:4px;padding:14px 16px;margin:8px 0;}
+  .runbar label{font-size:.78rem;font-weight:700;color:var(--navy);display:flex;flex-direction:column;gap:5px;letter-spacing:.3px;}
+  .runbar select{padding:8px 10px;border:1px solid var(--line);border-radius:3px;background:#fff;font-size:.9rem;min-width:160px;}
+  .runbar input[type=text]{padding:8px 10px;border:1px solid var(--line);border-radius:3px;background:#fff;font-size:.9rem;min-width:280px;}
+  .runbar input[type=date]{padding:7px 9px;border:1px solid var(--line);border-radius:3px;background:#fff;font-size:.9rem;}
+  .runbar input[type=number]{padding:8px 9px;border:1px solid var(--line);border-radius:3px;background:#fff;font-size:.9rem;width:84px;}
+  .runbar button{background:var(--navy);color:#fff;border:none;border-radius:3px;padding:11px 20px;
+    font-weight:700;font-size:.9rem;cursor:pointer;letter-spacing:.3px;}
+  .runbar button:hover{background:var(--steel);}
+  .runbar button:disabled{opacity:.6;cursor:progress;}
+  .run-status{font-size:.84rem;color:var(--muted);margin-left:auto;padding-bottom:2px;}
+  #map{height:340px;border:1px solid var(--line);border-radius:4px;margin:10px 0 2px;}
+  .runbar button.ghost{background:#fff;color:var(--navy);border:1px solid var(--navy);}
+  .runbar button.ghost.active{background:var(--gold);color:#1a1400;border-color:var(--gold);}
+  a.dl{background:var(--green);color:#fff;border-radius:3px;padding:11px 16px;font-weight:700;
+    font-size:.9rem;text-decoration:none;}
+  a.dl:hover{background:#155f34;color:#fff;}
+  .runbar label.chk{flex-direction:row;align-items:center;gap:7px;font-weight:600;color:var(--navy);}
+  .runbar label.chk input{width:16px;height:16px;}
+  .vtoggle{display:flex;margin:10px 0 0;}
+  .vtoggle button{background:#fff;color:var(--navy);border:1px solid var(--navy);padding:8px 16px;
+    font-weight:600;font-size:.85rem;cursor:pointer;}
+  .vtoggle button:first-child{border-radius:3px 0 0 3px;}
+  .vtoggle button:last-child{border-radius:0 3px 3px 0;border-left:none;}
+  .vtoggle button.active{background:var(--navy);color:#fff;}
+  .mtiles{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:18px;}
+  .mtile{background:var(--paper);border:1px solid var(--line);border-left:4px solid var(--gold);
+    border-radius:4px;padding:14px 16px;}
+  section:nth-of-type(even) .mtile{background:#f7f9fc;}
+  .mtile b{display:block;font-family:var(--serif);font-size:1.7rem;color:var(--navy);line-height:1.1;}
+  .mtile span{font-size:.82rem;color:var(--muted);}
+  .band{background:var(--steel);color:#dbe6f5;}
+  .band .wrap{display:flex;flex-wrap:wrap;gap:26px;justify-content:space-between;align-items:center;padding:20px 22px;}
+  .band .item{font-size:.9rem;} .band .item b{color:#fff;display:block;font-size:1.02rem;}
+  @media(max-width:820px){
+    .stats,.g3,.g2,.mtiles{grid-template-columns:1fr 1fr;}
+    .impact{grid-template-columns:1fr;}
+    .m-right{display:none;}
+    .hero h1{font-size:1.9rem;}
+  }
+</style>
+</head>
+<body>
+
+<div class="strip"><div class="wrap">
+  <span>SMART INDIA HACKATHON 2026 &nbsp;·&nbsp; DOMAIN: SATELLITE / GEOSPATIAL INTELLIGENCE</span>
+  <span>Prototype for evaluation</span>
+</div></div>
+
+<header class="mast"><div class="wrap">
+  <div class="emblem">
+    <svg width="60" height="60" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="32" cy="32" r="30" fill="#0b2545" stroke="#b8860b" stroke-width="2"/>
+      <ellipse cx="32" cy="32" rx="12" ry="26" stroke="#7f93b5" stroke-width="1.4" fill="none"/>
+      <circle cx="32" cy="32" r="12" stroke="#7f93b5" stroke-width="1.4" fill="none"/>
+      <path d="M16 32h32M32 16v32" stroke="#7f93b5" stroke-width="1" opacity=".5"/>
+      <circle cx="32" cy="32" r="6.5" fill="#1c6b3c"/>
+      <rect x="44" y="11" width="8" height="8" rx="1" fill="#b8860b" transform="rotate(45 48 15)"/>
+    </svg>
+  </div>
+  <div class="m-id">
+    <div class="m-over">Satellite Imagery Super-Resolution &amp; Geospatial Intelligence Platform</div>
+    <div class="m-name">SATSR</div>
+    <div class="m-sub">Sentinel-2 &nbsp;10&nbsp;m&nbsp;&rarr;&nbsp;4&nbsp;m &nbsp;·&nbsp; georeferenced &nbsp;·&nbsp; multispectral &nbsp;·&nbsp; uncertainty-aware</div>
+  </div>
+  <div class="m-right"><b>Version 1.0.0</b><br>Data: Copernicus Sentinel-2<br>Status: Operational (demo)</div>
+</div></header>
+<div class="tricolor"></div>
+
+<nav><div class="wrap">
+  <a href="#overview">Overview</a>
+  <a href="#viewer">Imagery Viewer</a>
+  <a href="#capabilities">Capabilities</a>
+  <a href="#technology">Technology</a>
+  <a href="#process">How it works</a>
+  <a href="#validation">Performance</a>
+  <a href="#impact">Impact</a>
+  <a class="cta" href="#viewer">Launch Viewer</a>
+</div></nav>
+
+<!-- HERO -->
+<section class="hero" id="overview" style="border-bottom:none;">
+  <div class="wrap">
+    <div class="sec-over" style="color:#e0b654;">National-scale Earth Observation</div>
+    <h1>Turning free satellite imagery into sharp, map-accurate intelligence.</h1>
+    <p>SATSR uses generative AI to super-resolve free <b>10&nbsp;m Sentinel-2</b> imagery into
+       <span class="k">4&nbsp;m</span> products &mdash; georeferenced, spectrally faithful and uncertainty-flagged &mdash;
+       ingested live from Copernicus and delivered on a single 4&nbsp;GB GPU.</p>
+    <div class="stats">
+      <div class="stat"><b>&gt;99%</b><span>lower imagery cost vs. commercial 4&nbsp;m</span></div>
+      <div class="stat"><b>12-band</b><span>multispectral super-resolution</span></div>
+      <div class="stat"><b>~5&nbsp;s</b><span>live scene ingest (Sentinel Hub)</span></div>
+      <div class="stat"><b>&lt;1&nbsp;hr</b><span>all of India at 1,000 nodes</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- VIEWER -->
+<section id="viewer">
+  <div class="wrap">
+    <div class="sec-over">Imagery Viewer</div>
+    <h2>Before / After &mdash; Mumbai, live from Copernicus</h2>
+    <p style="color:#37445a;max-width:780px;">Drag the divider. Left is the raw <b>10&nbsp;m Sentinel-2</b> input; right is the
+       SATSR-enhanced <b>4&nbsp;m</b> product of Dubai &mdash; the coastal islands, street grid, road networks and
+       waterways sharpen into focus. Ingested live via Sentinel Hub (~5&nbsp;s) and super-resolved 4&times; on a single GPU.</p>
+    <div id="map"></div>
+    <div class="runbar">
+      <label>Area
+        <select id="preset">
+          <option value="Dubai">Dubai, UAE</option>
+          <option value="Mumbai">Mumbai, India</option>
+          <option value="Bengaluru">Bengaluru, India</option>
+          <option value="Cairo">Cairo, Egypt</option>
+          <option value="Nepal Trishuli">Nepal Trishuli</option>
+          <option value="__coords">Enter coordinates&hellip;</option>
+          <option value="__custom">Custom &mdash; drawn</option>
+        </select>
+      </label>
+      <label id="coordWrap" style="display:none">Coordinates
+        <input id="coordIn" type="text" placeholder="lon,lat · bbox · or 28°36′N, 77°13′E">
+      </label>
+      <button id="coordBtn" type="button" class="ghost" style="display:none">Set</button>
+      <button id="drawBtn" type="button" class="ghost">Draw area</button>
+      <label>Imagery from
+        <input type="date" id="dfrom" value="2026-01-01">
+      </label>
+      <label>to
+        <input type="date" id="dto" value="2026-06-30">
+      </label>
+      <label>Max cloud&nbsp;%
+        <input type="number" id="cloud" min="0" max="100" step="5" value="25">
+      </label>
+      <label>Detail
+        <select id="scale">
+          <option value="2.5">4 m (2.5&times;)</option>
+          <option value="4" selected>2.5 m (4&times;)</option>
+        </select>
+      </label>
+      <label class="chk"><input type="checkbox" id="unc"> Uncertainty map</label>
+      <button id="runBtn">Run super-resolution</button>
+      <a id="dlBtn" class="dl" href="#" style="display:none">&#8595; Download GeoTIFF</a>
+      <span class="run-status" id="runStatus">Pick an area or draw one on the map, then run.</span>
+    </div>
+    <div class="vtoggle" id="vtoggle" hidden>
+      <button type="button" data-v="cmp" class="active">Before / After</button>
+      <button type="button" data-v="unc">Uncertainty map</button>
+    </div>
+    <div class="compare" id="cmp">
+      <img src="assets/before.png" alt="10 m input">
+      <div class="after-wrap" id="afterWrap"><img src="assets/after.png" alt="SATSR 4 m"></div>
+      <div class="handle" id="handle"></div>
+      <div class="lbl l">10&nbsp;m INPUT</div>
+      <div class="lbl r">SATSR 4&nbsp;m</div>
+    </div>
+  </div>
+</section>
+
+<!-- CAPABILITIES -->
+<section id="capabilities">
+  <div class="wrap">
+    <div class="sec-over">Capabilities</div>
+    <h2>One platform, full-spectrum intelligence</h2>
+    <p style="color:#37445a;max-width:820px;">A single pipeline takes a free Sentinel-2 scene from raw pixels to
+       decision-ready, georeferenced products &mdash; sharpened, spectrally faithful, confidence-flagged and analysis-ready.</p>
+    <div class="grid g3" style="margin-top:20px;">
+      <div class="card"><span class="idx">01</span><h3>Generative super-resolution</h3>
+        <p>A 23-block RRDBNet / Real-ESRGAN backbone reconstructs fine structure &mdash; coastlines, road networks,
+           field edges and rooftops &mdash; sharpening 10&nbsp;m imagery to 4&nbsp;m and beyond (up to 10&times;), with the
+           CRS and geotransform carried through untouched so every pixel stays map-accurate.</p>
+        <span class="spec"><b>Backbone</b> 23-block RRDBNet · 16.7M params · tiled seam-free streaming</span></div>
+
+      <div class="card"><span class="idx">02</span><h3>12-band multispectral</h3>
+        <p>Not just RGB &mdash; every band is super-resolved independently across the visible, NIR, red-edge and
+           shortwave spectrum. A radiometric correction step pins the output back to the input's reflectance, so
+           colours stay honest and derived indices (NDVI, NDWI, NDBI) hold up at full detail.</p>
+        <span class="spec"><b>Bands</b> B01&ndash;B12 + B8A · L2A surface reflectance</span></div>
+
+      <div class="card"><span class="idx">03</span><h3>Uncertainty-aware</h3>
+        <p>An 8&times; test-time-augmentation ensemble returns both the estimate and a per-pixel confidence map,
+           flagging where detail is genuinely observed versus statistically inferred. Analysts get a scientific
+           product they can trust &mdash; not a cosmetic upscale that hides its own guesses.</p>
+        <span class="spec"><b>Method</b> 8&times; TTA ensemble · inferno confidence layer</span></div>
+
+      <div class="card"><span class="idx">04</span><h3>Downstream extraction</h3>
+        <p>Sharper inputs unlock sharper analytics: building footprints, road centrelines, water bodies and
+           agricultural field boundaries are detected on the enhanced imagery and exported as clean vectors,
+           ready to drop straight into any GIS or national mapping workflow.</p>
+        <span class="spec"><b>Outputs</b> object &amp; feature detection · GeoJSON vectors</span></div>
+
+      <div class="card"><span class="idx">05</span><h3>Live data ingest</h3>
+        <p>Draw an area on the map or enter coordinates and the platform pulls the freshest low-cloud Sentinel-2
+           scene on demand &mdash; in roughly five seconds &mdash; across three redundant routes, so a single
+           provider outage never stalls a mission.</p>
+        <span class="spec"><b>Routes</b> Sentinel Hub · Copernicus CDSE · AWS Earth Search (STAC)</span></div>
+
+      <div class="card"><span class="idx">06</span><h3>Lightweight &amp; sovereign</h3>
+        <p>INT8 quantization shrinks the model to 17&nbsp;MB with no measurable loss (SSIM 0.998), so it runs on
+           commodity 4&nbsp;GB GPUs or plain CPU &mdash; deployable on Indian hardware, air-gapped and
+           offline-capable, with no proprietary imagery and no vendor lock-in.</p>
+        <span class="spec"><b>Footprint</b> 17 MB INT8 · 4&nbsp;GB VRAM · CPU-capable</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- TECHNOLOGY -->
+<section id="technology">
+  <div class="wrap">
+    <div class="sec-over">Technology</div>
+    <h2>Open, proven, sovereign stack</h2>
+    <p style="color:#37445a;max-width:780px;">Built entirely on open-source software and free open data &mdash;
+       no proprietary imagery, no vendor lock-in, deployable on Indian hardware.</p>
+    <div class="chips">
+      <span>PyTorch</span><span>Real-ESRGAN / RRDBNet</span><span>rasterio · GDAL</span>
+      <span>OpenCV</span><span>scikit-image</span>
+      <span>Sentinel Hub API</span><span>Copernicus CDSE</span><span>AWS Earth Search · STAC</span>
+      <span>NumPy</span><span>INT8 quantization</span><span>GeoTIFF · GeoJSON</span>
+    </div>
+  </div>
+</section>
+
+<!-- DATA BAND -->
+<section class="band" style="padding:0;border:none;">
+  <div class="wrap">
+    <div class="item"><b>Copernicus Sentinel-2 L2A</b>Free &amp; open imagery (ESA)</div>
+    <div class="item"><b>13 spectral bands</b>10 m / 20 m / 60 m native</div>
+    <div class="item"><b>~5 day revisit</b>Fresh coverage of India</div>
+    <div class="item"><b>3 live ingest routes</b>Sentinel Hub · CDSE · AWS</div>
+    <div class="item"><b>4 GB VRAM</b>Runs on commodity GPUs</div>
+  </div>
+</section>
+
+<!-- PROCESS -->
+<section id="process">
+  <div class="wrap">
+    <div class="sec-over">How it works</div>
+    <h2>From open data to decision-ready maps</h2>
+    <ul class="tick" style="max-width:840px;margin-top:14px;">
+      <li>Ingest a Sentinel-2 scene or map area &mdash; live from Copernicus (~5&nbsp;s).</li>
+      <li>Convert to surface reflectance; tile the scene with overlap for seam-free processing.</li>
+      <li>Super-resolve each tile; an 8× test-time-augmentation ensemble yields the estimate and its per-pixel uncertainty.</li>
+      <li>Radiometric correction pins the output to the input's spectra &mdash; colours stay honest.</li>
+      <li>Stream every tile into a georeferenced GeoTIFF, ready for GIS and downstream analytics.</li>
+    </ul>
+    <div class="grid g2" style="margin-top:22px;">
+      <figure><img src="assets/multiband.png" alt="12-band product"><figcaption>Full 12-band Sentinel-2 stack, super-resolved 4× (per-band).</figcaption></figure>
+      <figure><img src="assets/disaster.png" alt="Disaster-zone super-resolution"><figcaption>Real 4× super-resolution of the Trishuli corridor, Nepal &mdash; with detail zoom.</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<!-- VALIDATION -->
+<section id="validation">
+  <div class="wrap">
+    <div class="sec-over">Validation &amp; Performance</div>
+    <h2>Measured, not just rendered</h2>
+    <p style="color:#37445a;max-width:780px;">Held-out validation against real references, and a quantised model that
+       matches full precision &mdash; small enough to deploy widely.</p>
+    <div class="mtiles">
+      <div class="mtile"><b>42 dB</b><span>PSNR &mdash; super-resolved vs. reference</span></div>
+      <div class="mtile"><b>0.998</b><span>SSIM &mdash; INT8 model vs. full precision</span></div>
+      <div class="mtile"><b>&lt;1&deg;</b><span>Spectral angle (SAM) &mdash; colour fidelity</span></div>
+      <div class="mtile"><b>3.9&times;</b><span>Model compression (INT8, 67&nbsp;&rarr;&nbsp;17&nbsp;MB)</span></div>
+      <div class="mtile"><b>~2.6 GB</b><span>Peak VRAM on the demo scene</span></div>
+      <div class="mtile"><b>2.5&ndash;10&times;</b><span>Resolution scaling (10&nbsp;m &rarr; 4/2.5/1&nbsp;m)</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- IMPACT -->
+<section id="impact">
+  <div class="wrap">
+    <div class="sec-over">Impact</div>
+    <h2>Built for national missions</h2>
+    <div class="impact" style="margin-top:16px;">
+      <figure><img src="assets/nepal.png" alt="Nepal Trishuli flood before/after"><figcaption>Disaster monitoring &mdash; Nepal Trishuli valley, Sentinel-2 (Copernicus), before/after the 26 Aug 2026 flood.</figcaption></figure>
+      <div>
+        <span class="badge">Featured use case &mdash; Disaster Response</span>
+        <p style="margin-top:10px;color:#37445a;">When a glacier collapsed on Nepal's Trishuli, responders had only blurry 10&nbsp;m pixels.
+           SATSR ingests free Sentinel-2 and sharpens the corridor to 4&nbsp;m the same day &mdash; mapping river channels,
+           roads and settlements for relief planning, at zero imagery cost.</p>
+        <ul class="tick">
+          <li><b>Disaster response</b> &mdash; floods, landslides, cyclones, GLOFs mapped within the pass.</li>
+          <li><b>Border &amp; infrastructure</b> &mdash; change detection over frontier sectors and strategic sites.</li>
+          <li><b>Agriculture</b> &mdash; field-scale crop health for MSP and crop-insurance verification.</li>
+          <li><b>Water &amp; forests</b> &mdash; reservoirs, river migration, deforestation, wildfire.</li>
+          <li><b>Urban &amp; coastal</b> &mdash; unauthorised construction, city growth, coastline change.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer><div class="wrap">
+  <b>SATSR &mdash; Satellite Imagery Super-Resolution &amp; Geospatial Intelligence Platform</b><br>
+  Engine: Real-ESRGAN / RRDBNet (PyTorch) &nbsp;·&nbsp; Analysis: NDVI / NDWI / NDBI, road &amp; water extraction.<br>
+  Imagery: Copernicus Sentinel-2 L2A (ESA) &mdash; free &amp; open data &nbsp;·&nbsp; Ingest: Sentinel Hub · Copernicus CDSE · AWS Earth Search.
+  <div class="disc">Prototype developed for Smart India Hackathon 2026. Demonstration system for evaluation; not an official Government of India service.
+    &nbsp;·&nbsp; © <span id="yr"></span> SATSR project team.</div>
+</div></footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  document.getElementById('yr').textContent = new Date().getFullYear();
+  // before/after slider
+  (function(){
+    var cmp=document.getElementById('cmp'), after=document.getElementById('afterWrap'),
+        handle=document.getElementById('handle'), dragging=false;
+    function setImgW(){ after.querySelector('img').style.width = cmp.clientWidth+'px'; }
+    function pos(x){
+      if(handle.style.display==='none') return;   // disabled in full uncertainty view
+      var r=cmp.getBoundingClientRect(); var p=Math.max(0,Math.min(1,(x-r.left)/r.width));
+      after.style.width=(p*100)+'%'; handle.style.left=(p*100)+'%';
+    }
+    window.addEventListener('resize',setImgW); setImgW();
+    cmp.addEventListener('mousedown',function(e){dragging=true;pos(e.clientX);});
+    window.addEventListener('mouseup',function(){dragging=false;});
+    window.addEventListener('mousemove',function(e){if(dragging)pos(e.clientX);});
+    cmp.addEventListener('touchstart',function(e){pos(e.touches[0].clientX);},{passive:true});
+    cmp.addEventListener('touchmove',function(e){pos(e.touches[0].clientX);},{passive:true});
+  })();
+
+  // interactive map (draw AOI) + live run + GeoTIFF download
+  (function(){
+    if(typeof L==='undefined' || !document.getElementById('map')) return;
+    var PRESETS={
+      "Dubai":[55.24,25.18,55.32,25.25], "Mumbai":[72.82,19.02,72.90,19.09],
+      "Bengaluru":[77.55,12.95,77.63,13.02], "Cairo":[31.20,30.02,31.28,30.09],
+      "Nepal Trishuli":[85.11,27.88,85.19,27.96]
+    };
+    var map=L.map('map',{scrollWheelZoom:false}).setView([25.21,55.28],11);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      {maxZoom:18, attribution:'&copy; OpenStreetMap'}).addTo(map);
+    var rect=null, bbox=PRESETS["Dubai"].slice();
+    function drawBox(b){
+      if(rect) map.removeLayer(rect);
+      rect=L.rectangle([[b[1],b[0]],[b[3],b[2]]],{color:'#b8860b',weight:2,fillOpacity:.08}).addTo(map);
+      map.fitBounds(rect.getBounds(),{padding:[24,24],maxZoom:13});
+    }
+    drawBox(bbox);
+    var preset=document.getElementById('preset'),
+        coordWrap=document.getElementById('coordWrap'),
+        coordIn=document.getElementById('coordIn'),
+        coordBtn=document.getElementById('coordBtn');
+    function showCoords(on){
+      coordWrap.style.display = on ? '' : 'none';
+      coordBtn.style.display  = on ? '' : 'none';
+    }
+    preset.addEventListener('change',function(){
+      showCoords(preset.value==='__coords');
+      if(PRESETS[preset.value]){ bbox=PRESETS[preset.value].slice(); drawBox(bbox); }
+      if(preset.value==='__coords'){ coordIn.value=bbox.join(', '); coordIn.focus(); }
+    });
+    // accepts: decimal "lon,lat", a bbox "minLon,minLat,maxLon,maxLat",
+    // or DMS with hemisphere e.g. "28°36′ N, 77°13′ E"
+    function ptBox(lon,lat){ return [lon-0.04,lat-0.035,lon+0.04,lat+0.035]; }
+    function applyCoords(){
+      var t=(coordIn.value||'').trim();
+      // 1) DMS with N/S/E/W letters — letters decide which value is lat vs lon
+      var dms=/(-?\d+(?:\.\d+)?)\s*[°:\sd]?\s*(\d+(?:\.\d+)?)?\s*['′:m]?\s*(\d+(?:\.\d+)?)?\s*["″s]?\s*([NSEWnsew])/g,
+          lat=null, lon=null, m;
+      while((m=dms.exec(t))){
+        var v=(parseFloat(m[1])||0)+(parseFloat(m[2])||0)/60+(parseFloat(m[3])||0)/3600,
+            h=m[4].toUpperCase();
+        if(h==='S'||h==='W') v=-v;
+        if(h==='N'||h==='S') lat=v; else lon=v;
+      }
+      if(lat!==null && lon!==null){ bbox=ptBox(lon,lat); }
+      else {
+        // 2) plain numbers: 2 = lon,lat point ; 4 = bbox
+        var n=t.split(/[,\s]+/).map(parseFloat).filter(function(v){return !isNaN(v);});
+        if(n.length===2){ bbox=ptBox(n[0],n[1]); }
+        else if(n.length===4){ bbox=[Math.min(n[0],n[2]),Math.min(n[1],n[3]),Math.max(n[0],n[2]),Math.max(n[1],n[3])]; }
+        else { status.textContent='Enter "lon,lat", a bbox, or DMS like 28°36′N, 77°13′E.'; return; }
+      }
+      preset.value='__coords'; showCoords(true); drawBox(bbox);
+      status.textContent='Area set from coordinates ('+bbox[1].toFixed(3)+'N, '+bbox[0].toFixed(3)+'E) — ready to run.';
+    }
+    coordBtn.addEventListener('click',applyCoords);
+    coordIn.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); applyCoords(); } });
+    // draw-your-own: click two corners
+    var drawBtn=document.getElementById('drawBtn'), drawing=false, start=null;
+    drawBtn.addEventListener('click',function(){
+      drawing=!drawing; drawBtn.classList.toggle('active',drawing);
+      drawBtn.textContent=drawing?'Click two corners…':'Draw area';
+      map.getContainer().style.cursor=drawing?'crosshair':'';
+    });
+    map.on('click',function(e){
+      if(!drawing) return;
+      if(!start){ start=e.latlng; return; }
+      var a=start,b=e.latlng;
+      bbox=[Math.min(a.lng,b.lng),Math.min(a.lat,b.lat),Math.max(a.lng,b.lng),Math.max(a.lat,b.lat)];
+      start=null; drawing=false; drawBtn.classList.remove('active'); drawBtn.textContent='Draw area';
+      map.getContainer().style.cursor=''; preset.value='__custom'; drawBox(bbox);
+    });
+
+    var runBtn=document.getElementById('runBtn'), status=document.getElementById('runStatus'),
+        dl=document.getElementById('dlBtn'), uncChk=document.getElementById('unc'),
+        vtoggle=document.getElementById('vtoggle'),
+        beforeImg=document.querySelector('.compare > img'),
+        afterWrap=document.getElementById('afterWrap'),
+        afterImg=afterWrap.querySelector('img'), handle=document.getElementById('handle'),
+        labL=document.querySelector('.lbl.l'), labR=document.querySelector('.lbl.r');
+    window._res={};
+    function setView(v){
+      [].forEach.call(vtoggle.querySelectorAll('button'),function(b){
+        b.classList.toggle('active', b.getAttribute('data-v')===v); });
+      if(v==='unc'){                                   // full-frame uncertainty heatmap
+        afterImg.src=window._res.unc; afterWrap.style.width='100%';
+        handle.style.display='none'; labL.style.display='none';
+        labR.textContent='UNCERTAINTY (inferno)';
+      } else {                                         // before/after split slider
+        beforeImg.src=window._res.before; afterImg.src=window._res.after;
+        afterWrap.style.width='50%'; handle.style.left='50%';
+        handle.style.display=''; labL.style.display=''; labR.textContent='SATSR';
+      }
+    }
+    [].forEach.call(vtoggle.querySelectorAll('button'),function(b){
+      b.addEventListener('click',function(){ setView(b.getAttribute('data-v')); }); });
+
+    runBtn.addEventListener('click', async function(){
+      var scale=parseFloat(document.getElementById('scale').value), unc=uncChk.checked;
+      var dFrom=document.getElementById('dfrom').value||'2026-01-01',
+          dTo=document.getElementById('dto').value||'2026-06-30',
+          cloud=parseInt(document.getElementById('cloud').value,10); if(isNaN(cloud)) cloud=25;
+      runBtn.disabled=true; dl.style.display='none'; vtoggle.hidden=true;
+      status.textContent='Ingesting & super-resolving… (true colour'+
+        (unc?' + uncertainty':'')+', ~'+(unc?'20–40':'8–15')+' s)';
+      try{
+        var r=await fetch('/api/run',{method:'POST',headers:{'Content-Type':'application/json'},
+              body:JSON.stringify({bbox:bbox,scale:scale,mode:'rgb',uncertainty:unc,
+                                   date_from:dFrom,date_to:dTo,max_cloud:cloud})});
+        var ct=r.headers.get('content-type')||'';
+        if(ct.indexOf('application/json')<0)
+          throw new Error('open the app server at http://127.0.0.1:8700  (run: python run_web.py)');
+        var d=await r.json();
+        if(!r.ok||d.error) throw new Error(d.error||('HTTP '+r.status));
+        window._res={before:d.before, after:d.after, unc:d.uncertainty};
+        setView('cmp');
+        var m=d.meta, gsd=(10/scale);
+        status.textContent=m.size[1]+'×'+m.size[0]+
+          ' px · '+gsd.toFixed(Number.isInteger(gsd)?0:1)+' m ('+scale+'×) · '+m.crs+
+          ' · ingest '+m.ingest_s+'s · SR '+m.sr_s+'s'+(d.uncertainty?' · uncertainty ✓':'');
+        vtoggle.hidden = !d.uncertainty;
+        if(m.download_id){ dl.href='/api/download/'+m.download_id; dl.style.display='inline-block'; }
+      }catch(e){ status.textContent='Run failed: '+e.message; }
+      finally{ runBtn.disabled=false; }
+    });
+
+    // Detect whether a live backend is present. On Hugging Face / local the API
+    // answers with JSON; on a static host (GitHub Pages, Vercel) it returns HTML.
+    fetch('/api/download/__probe__').then(function(r){
+      var ct=r.headers.get('content-type')||'';
+      if(ct.indexOf('application/json')<0){
+        status.textContent='Hosted static preview — the Dubai before/after below is a real SATSR result. '+
+          'Live “Run super-resolution” needs the backend (run: python run_web.py, or use the Hugging Face Space).';
+      }
+    }).catch(function(){});
+  })();
+</script>
+</body>
+</html>
